@@ -1,0 +1,57 @@
+{
+  "name": "google-docs-converter",
+  "version": "1.0.0",
+  "description": "Converts HTML and Markdown to Google Docs",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config jest.config.cjs",
+    "lint": "eslint . --ext .ts",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "prepare": "npm run build",
+    "prepublishOnly": "npm test && npm run lint",
+    "clean": "rimraf lib"
+  },
+  "author": "Kieran Peppiatt",
+  "license": "MIT",
+  "dependencies": {
+    "googleapis": "^144.0.0",
+    "cheerio": "^1.0.0-rc.12",
+    "marked": "^15.0.6"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.14",
+    "@types/node": "^22.13.0",
+    "@typescript-eslint/eslint-plugin": "^6.15.0",
+    "@typescript-eslint/parser": "^6.15.0",
+    "eslint": "^8.56.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-prettier": "^5.1.2",
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0",
+    "prettier": "^3.4.2",
+    "rimraf": "^5.0.5",
+    "ts-jest": "^29.2.5",
+    "typescript": "^5.7.3"
+  },
+  "files": [
+    "lib/**/*"
+  ],
+  "keywords": [
+    "google-docs",
+    "markdown",
+    "html",
+    "converter",
+    "typescript"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/google-docs-converter.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yourusername/google-docs-converter/issues"
+  },
+  "homepage": "https://github.com/yourusername/google-docs-converter#readme"
+}
