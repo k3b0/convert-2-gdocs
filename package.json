@@ -1,10 +1,9 @@
 {
   "name": "google-docs-converter",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "Converts HTML and Markdown to Google Docs",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
-  "type": "module",
   "scripts": {
     "build": "tsc",
     "test": "vitest",
@@ -12,7 +11,6 @@
     "lint": "eslint . --ext .ts",
     "format": "prettier --write \"src/**/*.ts\"",
     "prepare": "npm run build",
-    "prepublishOnly": "npm test && npm run lint",
     "clean": "rimraf lib"
   },
   "author": "Kieran Peppiatt",
@@ -31,6 +29,7 @@
     "eslint-plugin-prettier": "^5.1.2",
     "prettier": "^3.4.2",
     "rimraf": "^5.0.5",
+    "ts-node": "^10.9.2",
     "typescript": "^5.7.3",
     "vitest": "^3.0.4"
   },
