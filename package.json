@@ -1,6 +1,6 @@
 {
   "name": "convert-2-gdocs",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Converts HTML and Markdown to Google Docs",
   "type": "module",
   "main": "./dist/index.js",
