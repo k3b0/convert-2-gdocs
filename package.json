@@ -1,6 +1,6 @@
 {
   "name": "convert-2-gdocs",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Convert HTML content to Google Docs API requests",
   "type": "module",
   "repository": {
@@ -35,9 +35,7 @@
     "@vitest/coverage-v8": "^1.2.2",
     "cheerio": "1.0.0-rc.12",
     "vite-plugin-dts": "^4.5.0",
-    "vitest": "^1.2.2"
-  },
-  "dependencies": {
+    "vitest": "^1.2.2",
     "googleapis": "^144.0.0"
   }
 }

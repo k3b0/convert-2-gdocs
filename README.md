@@ -2,6 +2,11 @@
 
 A TypeScript library for converting HTML content to Google Docs format so it can be used with the Google Docs API.
 
+This is still WIP. 
+- It current supports main header, paragraph and list styles. 
+- Support for other formatting like tables will be added shortly.
+- Markdown to Google Docs format coming soon
+
 ## Installation
 
 ```bash
