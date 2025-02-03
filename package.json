@@ -1,22 +1,31 @@
 {
-  "name": "google-docs-converter",
+  "name": "convert-2-gdocs",
   "version": "0.1.0",
   "description": "Converts HTML and Markdown to Google Docs",
-  "main": "lib/index.js",
-  "types": "lib/index.d.ts",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
   "scripts": {
-    "build": "tsc",
+    "build": "vite build",
     "test": "vitest",
     "test:coverage": "vitest run --coverage",
     "lint": "eslint . --ext .ts",
     "format": "prettier --write \"src/**/*.ts\"",
     "prepare": "npm run build",
-    "clean": "rimraf lib"
+    "clean": "rimraf dist"
   },
   "author": "Kieran Peppiatt",
   "license": "MIT",
   "dependencies": {
     "cheerio": "^1.0.0-rc.12",
+    "convert-2-gdocs": "^0.1.0",
     "googleapis": "^144.0.0",
     "marked": "^15.0.6"
   },
@@ -31,10 +40,12 @@
     "rimraf": "^5.0.5",
     "ts-node": "^10.9.2",
     "typescript": "^5.7.3",
+    "vite": "^5.0.0",
+    "vite-plugin-dts": "^3.7.0",
     "vitest": "^3.0.4"
   },
   "files": [
-    "lib/**/*"
+    "dist/**/*"
   ],
   "keywords": [
     "google-docs",

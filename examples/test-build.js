@@ -1,4 +1,4 @@
-import { GoogleDocConverter } from '../lib/index.js';
+import { GoogleDocConverter } from '../dist/index.js';
 
 // Example of converting HTML to test the build
 function htmlExample() {

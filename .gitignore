@@ -44,3 +44,6 @@ yarn-error.log*
 
 # Debug files
 debug.log
+
+# Spec and Build Docs for Agents
+docs/
