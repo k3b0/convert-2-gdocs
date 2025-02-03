@@ -47,3 +47,6 @@ debug.log
 
 # Spec and Build Docs for Agents
 docs/
+
+# Local tests after build
+test-build.js
