@@ -1,8 +1,27 @@
 {
-  "name": "google-docs-converter",
-  "version": "0.3.0",
-  "description": "Converts HTML/Markdown to Google Docs API requests",
+  "name": "convert-2-gdocs",
+  "version": "0.3.1",
+  "description": "Convert HTML content to Google Docs API requests",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/k3b0/convert-2-gdocs.git"
+  },
+  "keywords": [
+    "google-docs",
+    "google-docs-api",
+    "html",
+    "converter",
+    "typescript",
+    "docs-api",
+    "html-to-gdocs"
+  ],
+  "author": "k3b0",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/k3b0/convert-2-gdocs/issues"
+  },
+  "homepage": "https://github.com/k3b0/convert-2-gdocs#readme",
   "scripts": {
     "build": "vite build",
     "dev": "vite build --watch",
