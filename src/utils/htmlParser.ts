@@ -30,24 +30,54 @@ export function parseHtml(html: string): cheerio.CheerioAPI {
  */
 export function extractTextSegment(node: any, $: cheerio.CheerioAPI): TextSegment {
   const $node = $(node);
-  const text = $node.text() || '';
+  const text = node.type === 'text' ? node.data || '' : '';
   const style: docs_v1.Schema$TextStyle = {};
 
-  const tagName = (node.name || '').toLowerCase();
-  if (tagName === 'strong' || tagName === 'b') {
-    style.bold = true;
-  }
-  if (tagName === 'em' || tagName === 'i') {
-    style.italic = true;
-  }
-  if (tagName === 'u') {
-    style.underline = true;
-  }
+  // Only accumulate styles if this is a text node
+  if (node.type === 'text') {
+    // Get all parent elements up to the nearest block element
+    const parents = $node.parents().toArray();
+    const relevantParents = [];
+    
+    // Collect parents until we hit a block element
+    for (const parent of parents) {
+      if (isBlockElement(parent)) {
+        break;
+      }
+      relevantParents.push(parent);
+    }
+    
+    // Process styles from innermost to outermost to ensure proper nesting
+    relevantParents.reverse().forEach((parent: any) => {
+      const tagName = (parent.name || '').toLowerCase();
+      const newStyle: docs_v1.Schema$TextStyle = {};
 
-  const styleAttr = $node.attr('style');
-  if (styleAttr) {
-    const styles = parseStyleAttribute(styleAttr);
-    Object.assign(style, styles);
+      if (tagName === 'strong' || tagName === 'b') {
+        newStyle.bold = true;
+      }
+      if (tagName === 'em' || tagName === 'i') {
+        newStyle.italic = true;
+      }
+      if (tagName === 'u') {
+        newStyle.underline = true;
+      }
+      if (tagName === 'code' || tagName === 'pre') {
+        newStyle.weightedFontFamily = { fontFamily: 'Courier New' };
+        newStyle.fontSize = { magnitude: 10, unit: 'PT' };
+        if (tagName === 'pre') {
+          newStyle.backgroundColor = { color: { rgbColor: { red: 0.95, green: 0.95, blue: 0.95 } } };
+        }
+      }
+
+      // Check for inline styles
+      const styleAttr = $(parent).attr('style');
+      if (styleAttr) {
+        Object.assign(newStyle, parseStyleAttribute(styleAttr));
+      }
+
+      // Merge with existing style, giving precedence to inner styles
+      Object.assign(style, newStyle);
+    });
   }
 
   return { text, style };
@@ -113,6 +143,7 @@ export function getListConfig(node: any): ListConfig | null {
     return null;
   }
 
+  // Calculate nesting level by counting parent lists
   let nestingLevel = 0;
   let parent = node.parent;
   while (parent) {

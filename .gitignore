@@ -50,3 +50,4 @@ docs/
 
 # Local tests after build
 test-build.js
+create-doc.js
