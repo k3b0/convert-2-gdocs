@@ -92,7 +92,7 @@ describe('blocksToRequests', () => {
       text: 'List item',
       paragraphStyle: { namedStyleType: 'NORMAL_TEXT' },
       isListItem: true,
-      listInfo: { ordered: false, nestingLevel: 0 },
+      listInfo: { ordered: false, nestingLevel: 0, position: 1 },
     }];
     const requests = blocksToRequests(blocks);
     expect(requests.length).toBe(3);
@@ -187,7 +187,7 @@ describe('blocksToRequests edge cases', () => {
       paragraphStyle: { namedStyleType: 'NORMAL_TEXT' },
       inlineStyles: [{ start: 0, end: 4, textStyle: { bold: true } }],
       isListItem: true,
-      listInfo: { ordered: false, nestingLevel: 0 },
+      listInfo: { ordered: false, nestingLevel: 0, position: 1 },
     }];
     const requests = blocksToRequests(blocks);
     // Expected requests: insertText, updateParagraphStyle, updateTextStyle, and createParagraphBullets.

@@ -67,7 +67,7 @@ describe('parseHtmlToBlocks', () => {
     expect(blocks).toHaveLength(2);
     blocks.forEach((block, index) => {
       expect(block.isListItem).toBe(true);
-      expect(block.listInfo).toEqual({ ordered: false, nestingLevel: 0 });
+      expect(block.listInfo).toEqual({ ordered: false, nestingLevel: 0, position: index + 1 });
       expect(block.text).toBe(index === 0 ? 'First item' : 'Second item');
     });
   });
@@ -80,13 +80,118 @@ describe('parseHtmlToBlocks', () => {
       text: 'Parent',
       paragraphStyle: { namedStyleType: 'NORMAL_TEXT' },
       isListItem: true,
-      listInfo: { ordered: false, nestingLevel: 0 }
+      listInfo: { ordered: false, nestingLevel: 0, position: 1 }
     });
     expect(blocks[1]).toEqual({
       text: 'Child',
       paragraphStyle: { namedStyleType: 'NORMAL_TEXT' },
       isListItem: true,
-      listInfo: { ordered: false, nestingLevel: 1 }
+      listInfo: { ordered: false, nestingLevel: 1, position: 1 }
+    });
+  });
+
+  it('handles complex nested lists with mixed types', () => {
+    const html = `
+      <h3>3. Lists</h3>
+      <h4>Unordered List:</h4>
+      <ul>
+        <li>First level item</li>
+        <li>Another item
+          <ul>
+            <li>Second level item</li>
+            <li>Another nested item
+              <ul>
+                <li>Third level item</li>
+              </ul>
+            </li>
+          </ul>
+        </li>
+        <li>Back to first level</li>
+      </ul>
+      <h4>Ordered List:</h4>
+      <ol>
+        <li>First item</li>
+        <li>Second item
+          <ol>
+            <li>Nested numbered item</li>
+            <li>Another nested item
+              <ul>
+                <li>Mix with unordered list</li>
+              </ul>
+            </li>
+          </ol>
+        </li>
+        <li>Third item</li>
+      </ol>
+    `;
+    const blocks = parseHtmlToBlocks(html);
+    console.log(JSON.stringify(blocks, null, 2))
+    // Verify headings
+    expect(blocks[0].text).toBe('3. Lists');
+    expect(blocks[0].paragraphStyle.namedStyleType).toBe('HEADING_3');
+    expect(blocks[1].text).toBe('Unordered List:');
+    expect(blocks[1].paragraphStyle.namedStyleType).toBe('HEADING_4');
+
+    // Verify unordered list structure
+    const firstList = blocks.slice(2, 7);
+    expect(firstList[0]).toMatchObject({
+      text: 'First level item',
+      isListItem: true,
+      listInfo: { ordered: false, nestingLevel: 0, position: 1 }
+    });
+    expect(firstList[1]).toMatchObject({
+      text: 'Another item',
+      isListItem: true,
+      listInfo: { ordered: false, nestingLevel: 0, position: 2 }
+    });
+    expect(firstList[2]).toMatchObject({
+      text: 'Second level item',
+      isListItem: true,
+      listInfo: { ordered: false, nestingLevel: 1, position: 1 }
+    });
+    expect(firstList[3]).toMatchObject({
+      text: 'Another nested item',
+      isListItem: true,
+      listInfo: { ordered: false, nestingLevel: 1, position: 2 }
+    });
+    expect(firstList[4]).toMatchObject({
+      text: 'Third level item',
+      isListItem: true,
+      listInfo: { ordered: false, nestingLevel: 2, position: 1 }
+    });
+
+    // Verify ordered list structure
+    const secondListStart = blocks.findIndex(b => b.text === 'Ordered List:') + 1;
+    const secondList = blocks.slice(secondListStart + 1);
+    expect(secondList[0]).toMatchObject({
+      text: 'First item',
+      isListItem: true,
+      listInfo: { ordered: true, nestingLevel: 0, position: 1 }
+    });
+    expect(secondList[1]).toMatchObject({
+      text: 'Second item',
+      isListItem: true,
+      listInfo: { ordered: true, nestingLevel: 0, position: 2 }
+    });
+    expect(secondList[2]).toMatchObject({
+      text: 'Nested numbered item',
+      isListItem: true,
+      listInfo: { ordered: true, nestingLevel: 1, position: 1 }
+    });
+    expect(secondList[3]).toMatchObject({
+      text: 'Another nested item',
+      isListItem: true,
+      listInfo: { ordered: true, nestingLevel: 1, position: 2 }
+    });
+    expect(secondList[4]).toMatchObject({
+      text: 'Mix with unordered list',
+      isListItem: true,
+      listInfo: { ordered: false, nestingLevel: 2, position: 1 }
+    });
+    expect(secondList[5]).toMatchObject({
+      text: 'Third item',
+      isListItem: true,
+      listInfo: { ordered: true, nestingLevel: 0, position: 3 }
     });
   });
 
@@ -276,7 +381,7 @@ describe('ordered lists', () => {
     expect(blocks).toHaveLength(2);
     blocks.forEach((block, index) => {
       expect(block.isListItem).toBe(true);
-      expect(block.listInfo).toEqual({ ordered: true, nestingLevel: 0 });
+      expect(block.listInfo).toEqual({ ordered: true, nestingLevel: 0, position: index + 1 });
       expect(block.text).toBe(index === 0 ? 'First' : 'Second');
     });
   });
@@ -289,19 +394,19 @@ describe('ordered lists', () => {
       text: 'First',
       paragraphStyle: { namedStyleType: 'NORMAL_TEXT' },
       isListItem: true,
-      listInfo: { ordered: true, nestingLevel: 0 }
+      listInfo: { ordered: true, nestingLevel: 0, position: 1 }
     });
     expect(blocks[1]).toEqual({
       text: 'Sub unordered',
       paragraphStyle: { namedStyleType: 'NORMAL_TEXT' },
       isListItem: true,
-      listInfo: { ordered: false, nestingLevel: 1 }
+      listInfo: { ordered: false, nestingLevel: 1, position: 1 }
     });
     expect(blocks[2]).toEqual({
       text: 'Second',
       paragraphStyle: { namedStyleType: 'NORMAL_TEXT' },
       isListItem: true,
-      listInfo: { ordered: true, nestingLevel: 0 }
+      listInfo: { ordered: true, nestingLevel: 0, position: 2 }
     });
   });
 });
@@ -436,7 +541,7 @@ describe('Additional edge cases', () => {
     expect(blocks).toHaveLength(1);
     expect(blocks[0].text).toBe('Item with italic style');
     expect(blocks[0].isListItem).toBe(true);
-    expect(blocks[0].listInfo).toEqual({ ordered: false, nestingLevel: 0 });
+    expect(blocks[0].listInfo).toEqual({ ordered: false, nestingLevel: 0, position: 1 });
     expect(blocks[0].inlineStyles).toHaveLength(1);
     expect(blocks[0].inlineStyles![0]).toEqual({
       start: 10,

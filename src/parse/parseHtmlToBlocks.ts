@@ -17,7 +17,11 @@ export interface DocumentBlock {
     };
   }>;
   isListItem?: boolean;
-  listInfo?: { ordered: boolean; nestingLevel: number };
+  listInfo?: {
+    ordered: boolean;
+    nestingLevel: number;
+    position: number;  // Position within the current nesting level
+  };
   tableInfo?: {
     rowIndex: number;
     columnIndex: number;
@@ -29,7 +33,21 @@ export interface DocumentBlock {
 export function parseHtmlToBlocks(html: string): DocumentBlock[] {
   const $ = cheerio.load(html);
   const blocks: DocumentBlock[] = [];
-  let currentNestingLevel = 0;
+  interface ListContext {
+    ordered: boolean;
+    nestingLevel: number;
+    position: number;
+    parentListContext?: ListContext;  // Reference to parent list for position tracking
+  }
+  
+  const listStack: ListContext[] = [];
+
+  // Track the last position used at each nesting level for each list type
+  const positionTracker = new Map<string, number>();
+  
+  function getPositionKey(ordered: boolean, nestingLevel: number): string {
+    return `${ordered ? 'ol' : 'ul'}-${nestingLevel}`;
+  }
 
   function processNode($node: Cheerio<AnyNode>, nestingLevel: number = 0): void {
     $node.each((_: number, element: AnyNode) => {
@@ -85,39 +103,82 @@ export function parseHtmlToBlocks(html: string): DocumentBlock[] {
         }
         case 'ul':
         case 'ol': {
-          const previousNestingLevel = currentNestingLevel;
-          currentNestingLevel = nestingLevel;
+          const isOrdered = tagName === 'ol';
+          const currentList = listStack[listStack.length - 1];
+          
+          // Create new list context
+          const newListContext: ListContext = {
+            ordered: isOrdered,
+            nestingLevel: nestingLevel,
+            position: 0,
+            parentListContext: currentList
+          };
+          
+          // Reset position counter for this list level and type
+          const positionKey = getPositionKey(isOrdered, nestingLevel);
+          positionTracker.set(positionKey, 0);
+          
+          listStack.push(newListContext);
+          
           $element.children().each((_: number, child: AnyNode) => {
             if ('tagName' in child) {
               processNode($(child), nestingLevel);
             }
           });
-          currentNestingLevel = previousNestingLevel;
+          
+          listStack.pop();
           break;
         }
         case 'li': {
-          const parent = $element.parent().get(0);
-          const parentTag = parent && 'tagName' in parent ? parent.tagName.toLowerCase() : 'ul';
-        
-          // Clone <li> and remove nested lists only
+          const currentList = listStack[listStack.length - 1];
+          if (!currentList) break;
+          
+          // Get position for this list level and type
+          const positionKey = getPositionKey(currentList.ordered, currentList.nestingLevel);
+          let position = positionTracker.get(positionKey) || 0;
+          position++;
+          positionTracker.set(positionKey, position);
+          
+          // Clone <li> and remove nested lists to get just this item's text
           const $clone = $element.clone();
           $clone.children('ul, ol').remove();
-        
-          // Pass the trimmed clone to createBlock so it sees inline tags
+          
+          // Normalize whitespace in the cloned element
+          const normalizedText = $clone.text().replace(/\s+/g, ' ').trim();
+          
+          // Create a block for the list item
           const block = createBlock($clone, true, {
-            ordered: parentTag === 'ol',
-            nestingLevel: currentNestingLevel
-          });
-        
+            ordered: currentList.ordered,
+            nestingLevel: currentList.nestingLevel,
+            position: position
+          }, normalizedText);
+          
           blocks.push(block);
-        
-          // Process nested lists separately
+          
+          // Process any nested lists, incrementing the nesting level
           $element.children('ul, ol').each((_: number, nestedList: Element) => {
-            processNode($(nestedList), currentNestingLevel + 1);
+            const $nestedList = $(nestedList);
+            const isOrdered = nestedList.tagName.toLowerCase() === 'ol';
+            
+            // Create new list context for the nested list
+            const nestedListContext: ListContext = {
+              ordered: isOrdered,
+              nestingLevel: currentList.nestingLevel + 1,
+              position: 0,
+              parentListContext: currentList
+            };
+            
+            // Reset position counter for this nested list
+            const nestedPositionKey = getPositionKey(isOrdered, currentList.nestingLevel + 1);
+            positionTracker.set(nestedPositionKey, 0);
+            
+            listStack.push(nestedListContext);
+            processNode($nestedList, currentList.nestingLevel + 1);
+            listStack.pop();
           });
-        
+          
           break;
-        }        
+        }
         case 'br': {
           // Handle <br> tags by appending a newline to the last block if it exists
           if (blocks.length > 0) {
@@ -143,14 +204,19 @@ export function parseHtmlToBlocks(html: string): DocumentBlock[] {
     });
   }
 
+  /**
+   * Adjusted createBlock:
+   * Always calls processTextContent so inlineStyles are processed.
+   * Then, if a textOverride is provided, it overrides the computed text.
+   */
   function createBlock(
-    $element: Cheerio<Element>, 
-    isList: boolean = false, 
-    listInfo?: { ordered: boolean; nestingLevel: number },
+    $element: Cheerio<Element>,
+    isList: boolean = false,
+    listInfo?: { ordered: boolean; nestingLevel: number; position: number },
     textOverride?: string
   ): DocumentBlock {
     const block: DocumentBlock = {
-      text: textOverride || '',
+      text: '',
       paragraphStyle: { namedStyleType: getStyleType($element) },
       inlineStyles: []
     };
@@ -160,11 +226,15 @@ export function parseHtmlToBlocks(html: string): DocumentBlock[] {
       block.listInfo = listInfo;
     }
 
-    if (!textOverride) {
-      processTextContent($element, block);
+    // Always process text content and inline styles.
+    processTextContent($element, block);
+
+    // If a textOverride is provided (for example, a normalized text for list items), use it.
+    if (textOverride !== undefined) {
+      block.text = textOverride;
     }
 
-    if (block.inlineStyles?.length === 0) {
+    if (block.inlineStyles && block.inlineStyles.length === 0) {
       delete block.inlineStyles;
     }
 

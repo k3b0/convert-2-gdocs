@@ -15,6 +15,14 @@ export function blocksToRequests(blocks: DocumentBlock[]): any[] {
     }
   });
   
+  // Track list groups to create a single bullet request per group
+  let currentListGroup = {
+    startIndex: 0,
+    endIndex: 0,
+    ordered: false,
+    hasItems: false
+  };
+
   blocks.forEach(block => {
     const blockStart = currentIndex;
     const blockText = block.text;
@@ -81,16 +89,62 @@ export function blocksToRequests(blocks: DocumentBlock[]): any[] {
     
     // List item request
     if (block.isListItem && block.listInfo) {
-      const bulletPreset = block.listInfo.ordered ? "NUMBERED_DECIMAL_ALPHA_ROMAN" : "BULLET_DISC_CIRCLE_SQUARE";
+      if (!currentListGroup.hasItems) {
+        // Start new group
+        currentListGroup.startIndex = blockStart;
+        currentListGroup.ordered = block.listInfo.ordered;
+        currentListGroup.hasItems = true;
+      } else if (block.listInfo.ordered !== currentListGroup.ordered) {
+        // Create bullet request for previous group
+        const bulletPreset = currentListGroup.ordered ? "NUMBERED_DECIMAL_ALPHA_ROMAN" : "BULLET_DISC_CIRCLE_SQUARE";
+        requests.push({
+          createParagraphBullets: {
+            range: {
+              startIndex: currentListGroup.startIndex,
+              endIndex: currentListGroup.endIndex
+            },
+            bulletPreset: bulletPreset
+          }
+        });
+        // Start new group
+        currentListGroup.startIndex = blockStart;
+        currentListGroup.ordered = block.listInfo.ordered;
+      }
+      currentListGroup.endIndex = blockStart + textLength;
+
+      // Add indentation for nesting
       requests.push({
-        createParagraphBullets: {
+        updateParagraphStyle: {
           range: {
             startIndex: blockStart,
             endIndex: blockStart + textLength
           },
+          paragraphStyle: {
+            indentFirstLine: {
+              magnitude: block.listInfo.nestingLevel * 18,
+              unit: 'PT'
+            },
+            indentStart: {
+              magnitude: (block.listInfo.nestingLevel * 18) + 36,
+              unit: 'PT'
+            }
+          },
+          fields: "indentFirstLine,indentStart"
+        }
+      });
+    } else if (currentListGroup.hasItems) {
+      // Create bullet request for previous group when hitting non-list item
+      const bulletPreset = currentListGroup.ordered ? "NUMBERED_DECIMAL_ALPHA_ROMAN" : "BULLET_DISC_CIRCLE_SQUARE";
+      requests.push({
+        createParagraphBullets: {
+          range: {
+            startIndex: currentListGroup.startIndex,
+            endIndex: currentListGroup.endIndex
+          },
           bulletPreset: bulletPreset
         }
       });
+      currentListGroup.hasItems = false;
     }
 
     // Table requests
@@ -115,5 +169,19 @@ export function blocksToRequests(blocks: DocumentBlock[]): any[] {
     currentIndex = blockStart + fullLength;
   });
   
+  // Create final bullet request if we ended with a list group
+  if (currentListGroup.hasItems) {
+    const bulletPreset = currentListGroup.ordered ? "NUMBERED_DECIMAL_ALPHA_ROMAN" : "BULLET_DISC_CIRCLE_SQUARE";
+    requests.push({
+      createParagraphBullets: {
+        range: {
+          startIndex: currentListGroup.startIndex,
+          endIndex: currentListGroup.endIndex
+        },
+        bulletPreset: bulletPreset
+      }
+    });
+  }
+
   return requests;
 }
