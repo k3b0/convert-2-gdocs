@@ -4,7 +4,7 @@
   "description": "Converts HTML/Markdown to Google Docs API requests",
   "type": "module",
   "scripts": {
-    "test": "vitest",
+    "test": "vitest run --reporter verbose",
     "test:watch": "vitest --watch",
     "test:coverage": "vitest --coverage"
   },

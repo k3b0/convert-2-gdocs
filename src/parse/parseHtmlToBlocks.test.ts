@@ -392,3 +392,60 @@ describe('tables', () => {
     });
   });
 });
+
+it('returns an empty array for an empty HTML string', () => {
+  const html = '';
+  const blocks = parseHtmlToBlocks(html);
+  expect(blocks).toHaveLength(0);
+});
+
+it('parses an empty <p> as a DocumentBlock with empty text', () => {
+  const html = '<p></p>';
+  const blocks = parseHtmlToBlocks(html);
+  expect(blocks).toHaveLength(1);
+  expect(blocks[0].text).toBe('');
+  expect(blocks[0].paragraphStyle).toEqual({ namedStyleType: 'NORMAL_TEXT' });
+});
+
+describe('Additional edge cases', () => {
+  it('clamps inline style range correctly when inline element is followed by extra text', () => {
+    const html = '<p>Hello <strong>World</strong>!!!</p>';
+    const blocks = parseHtmlToBlocks(html);
+    expect(blocks).toHaveLength(1);
+    expect(blocks[0].text).toBe('Hello World!!!');
+    expect(blocks[0].inlineStyles).toHaveLength(1);
+    expect(blocks[0].inlineStyles![0]).toEqual({
+      start: 6,
+      end: 11,
+      textStyle: { bold: true }
+    });
+  });
+
+  it('handles inline styles inside list items', () => {
+    const html = '<ul><li>Item with <em>italic</em> style</li></ul>';
+    const blocks = parseHtmlToBlocks(html);
+    expect(blocks).toHaveLength(1);
+    expect(blocks[0].text).toBe('Item with italic style');
+    expect(blocks[0].isListItem).toBe(true);
+    expect(blocks[0].listInfo).toEqual({ ordered: false, nestingLevel: 0 });
+    expect(blocks[0].inlineStyles).toHaveLength(1);
+    expect(blocks[0].inlineStyles![0]).toEqual({
+      start: 10,
+      end: 16,
+      textStyle: { italic: true }
+    });
+  });
+
+  it('trims inline style whitespace correctly', () => {
+    const html = '<p>Hello <strong>  World  </strong>!</p>';
+    const blocks = parseHtmlToBlocks(html);
+    expect(blocks).toHaveLength(1);
+    expect(blocks[0].text).toBe('Hello   World  !');
+    expect(blocks[0].inlineStyles).toHaveLength(1);
+    expect(blocks[0].inlineStyles![0]).toEqual({
+      start: 8,
+      end: 13,
+      textStyle: { bold: true }
+    });
+  });
+});
