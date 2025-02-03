@@ -1,214 +1,60 @@
-# Testing Guide
+# Testing Strategy and Implementation Plan
 
-This guide outlines the testing strategy and practices for the gdocify library.
+## Overview
 
-## Testing Stack
+This document outlines a robust plan to ensure Jest works well with our ES module project and resolves issues related to unexpected tokens, configuration conflicts, and dependency transformations.
 
-- **Jest**: Main testing framework
-- **ts-jest**: TypeScript support for Jest
-- **@types/jest**: TypeScript type definitions for Jest
+## Issues Encountered
 
-## Test Structure
+- Jest errors regarding unexpected tokens (e.g., "export" in ESM modules).
+- Failures to parse files due to ESM syntax in dependencies (e.g., cheerio).
+- Configuration errors in jest.config when using ES modules (ReferenceError: module is not defined, exports not defined).
+- Issues with mock setups in our test environment (test/setup.ts).
 
-```
-test/
-├── GoogleDocConverter.test.ts    # Integration tests
-├── converters/
-│   ├── htmlToGDoc.test.ts       # HTML conversion tests
-│   └── mdToHtml.test.ts         # Markdown conversion tests
-└── utils/
-    ├── htmlParser.test.ts       # HTML parser utility tests
-    └── indexManager.test.ts     # Index management tests
-```
+## Proposed Solutions
 
-## Types of Tests
+### 1. Jest Configuration
 
-### 1. Unit Tests
+- Rename the Jest configuration file to `jest.config.cjs` to enforce CommonJS syntax.
+- Use the experimental VM Modules flag to support ES modules:
+  ```
+  node --experimental-vm-modules node_modules/jest/bin/jest.js --config jest.config.cjs
+  ```
+- Adjust `transformIgnorePatterns` to properly transform ES module dependencies like cheerio.
 
-Unit tests focus on testing individual components in isolation.
+### 2. Transformation Settings
 
-Example unit test for Markdown conversion:
+- Configure Babel or ts-jest to transform TypeScript and ES module syntax as needed.
+- Ensure the transformer configuration supports non-standard syntax in dependencies.
+- Update `moduleNameMapper` if necessary to stub non-JS modules (e.g., assets).
 
-```typescript
-import { markdownToHtml } from '../src/converters/mdToHtml';
+### 3. Test Setup Adjustments
 
-describe('markdownToHtml', () => {
-  test('converts basic markdown to html', () => {
-    const markdown = '# Title\n\nThis is **bold** text.';
-    const html = markdownToHtml(markdown);
-    expect(html).toContain('<h1>Title</h1>');
-    expect(html).toContain('<strong>bold</strong>');
-  });
+- Update `test/setup.ts` to correctly import and use Jest globals with ESM support.
+- Remove conflicts in mocking code, ensuring the syntax aligns with ESM standards.
 
-  test('handles empty input', () => {
-    const html = markdownToHtml('');
-    expect(html).toBe('');
-  });
-});
-```
+### 4. CI and Local Development
 
-### 2. Integration Tests
+- Document the correct commands for running tests locally and in CI.
+- Example command for local testing:
+  ```
+  node --experimental-vm-modules node_modules/jest/bin/jest.js --config jest.config.cjs
+  ```
 
-Integration tests verify that different components work together correctly.
+## Implementation Steps
 
-Example integration test:
+1. Rename `jest.config.js` to `jest.config.cjs` or modify its contents to use CommonJS.
+2. Update configuration options, especially `transformIgnorePatterns` and `transform` settings.
+3. Adjust test mocks and setup scripts in `test/setup.ts` to use proper ESM syntax.
+4. Update documentation to help developers understand the new testing setup.
+5. Integrate changes in continuous integration pipelines.
 
-```typescript
-import { GoogleDocConverter } from '../src/GoogleDocConverter';
-import { docs_v1 } from 'googleapis';
+## Troubleshooting
 
-describe('GoogleDocConverter', () => {
-  let converter: GoogleDocConverter;
+- If you see "Unexpected token" errors, verify the transformer configurations.
+- Check for proper handling of ECMAScript Modules in dependencies.
+- Ensure consistency between `package.json` ("type": "module") and Jest configurations.
 
-  beforeEach(() => {
-    converter = new GoogleDocConverter();
-  });
+## Conclusion
 
-  test('converts markdown to valid Google Docs requests', () => {
-    const markdown = '# Heading\nParagraph with **bold** text.';
-    const requests = converter.convertMarkdown(markdown);
-
-    expect(requests).toHaveLength(3); // Heading, paragraph, and text style
-    expect(requests[0]).toHaveProperty('insertText');
-    expect(requests[1]).toHaveProperty('updateParagraphStyle');
-    expect(requests[2]).toHaveProperty('updateTextStyle');
-  });
-});
-```
-
-### 3. Edge Case Tests
-
-Tests that verify the library handles unusual or extreme inputs correctly.
-
-```typescript
-describe('edge cases', () => {
-  test('handles nested formatting', () => {
-    const html = '<p><strong><em>Bold and italic</em></strong></p>';
-    const requests = converter.convertHtml(html);
-    // Verify correct nesting of text styles
-  });
-
-  test('handles malformed input', () => {
-    const html = '<p>Unclosed paragraph';
-    expect(() => converter.convertHtml(html)).not.toThrow();
-  });
-});
-```
-
-## Test Coverage
-
-We aim for high test coverage to ensure reliability:
-
-- Minimum 90% line coverage
-- 100% coverage of core conversion logic
-- All edge cases covered
-
-Run coverage report:
-```bash
-npm run test:coverage
-```
-
-## Writing Good Tests
-
-### Best Practices
-
-1. **Arrange-Act-Assert Pattern**
-   ```typescript
-   test('converts bold text', () => {
-     // Arrange
-     const html = '<strong>bold text</strong>';
-     
-     // Act
-     const requests = converter.convertHtml(html);
-     
-     // Assert
-     expect(requests[0]).toMatchObject({
-       updateTextStyle: {
-         style: { bold: true }
-       }
-     });
-   });
-   ```
-
-2. **Descriptive Test Names**
-   - Use clear, descriptive names that explain the test's purpose
-   - Follow the pattern: "should [expected behavior] when [condition]"
-
-3. **Test Independence**
-   - Each test should be independent and not rely on other tests
-   - Use `beforeEach` to set up fresh test instances
-
-4. **Meaningful Assertions**
-   - Test the actual behavior, not implementation details
-   - Use specific assertions rather than generic ones
-
-## Test Data
-
-### Fixtures
-
-Store test data in `test/fixtures/` directory:
-
-```
-test/fixtures/
-├── markdown/
-│   ├── basic.md
-│   └── complex.md
-└── html/
-    ├── basic.html
-    └── complex.html
-```
-
-Example fixture usage:
-
-```typescript
-import { readFileSync } from 'fs';
-import { join } from 'path';
-
-const loadFixture = (path: string) => 
-  readFileSync(join(__dirname, 'fixtures', path), 'utf-8');
-
-test('converts complex document', () => {
-  const html = loadFixture('html/complex.html');
-  const requests = converter.convertHtml(html);
-  // Test assertions
-});
-```
-
-## Running Tests
-
-### Commands
-
-- Run all tests: `npm test`
-- Run specific test file: `npm test -- path/to/test.ts`
-- Watch mode: `npm test -- --watch`
-- Coverage report: `npm run test:coverage`
-
-### Continuous Integration
-
-Tests are automatically run in CI:
-- On pull requests
-- On pushes to main branch
-- Nightly builds
-
-## Debugging Tests
-
-1. **Using VS Code**
-   - Set breakpoints in test files
-   - Use the JavaScript Debug Terminal
-   - Run tests in debug mode
-
-2. **Console Output**
-   - Use `console.log()` for temporary debugging
-   - Jest's `--verbose` flag for detailed output
-
-## Test Maintenance
-
-- Review and update tests when adding new features
-- Remove obsolete tests
-- Keep test data up-to-date
-- Regularly check test coverage
-
-## Resources
-
-- [Jest Documentation](https://jestjs.io/docs/getting-started)
-- [TypeScript Testing Best Practices](https://github.com/goldbergyoni/javascript-testing-best-practices)
+Following this plan will enable robust and reliable testing with Jest in our ES module environment, ensuring smooth local and CI builds.
