@@ -99,7 +99,17 @@ describe('parseHtmlToBlocks', () => {
     expect(blocks[0].inlineStyles![0]).toEqual({
       start: 6,
       end: 14,
-      textStyle: { color: '#ff0000' }
+      textStyle: {
+        foregroundColor: {
+          color: {
+            rgbColor: {
+              red: 1,
+              green: 0,
+              blue: 0
+            }
+          }
+        }
+      }
     });
   });
 });
@@ -128,53 +138,42 @@ it('parses a <div> element as a block-level element with NORMAL_TEXT style', () 
   expect(blocks[0].paragraphStyle).toEqual({ namedStyleType: 'NORMAL_TEXT' });
 });
 
-// it('creates inlineStyles for <code> elements with appropriate formatting', () => {
-//   const html = '<p>Here is some <code>inline code</code></p>';
-//   const blocks = parseHtmlToBlocks(html);
-//   expect(blocks).toHaveLength(1);
-//   expect(blocks[0].text).toBe('Here is some inline code');
-//   // Adjust expectation according to the textStyle defined for code.
-// });
-
 it('correctly handles sibling inline elements with different styles', () => {
   const html = '<p>This is <strong>bold</strong> and <em>italic</em> text.</p>';
   const blocks = parseHtmlToBlocks(html);
   expect(blocks).toHaveLength(1);
   expect(blocks[0].text).toBe('This is bold and italic text.');
-  // Expect two inlineStyles: one for bold and one for italic.
   expect(blocks[0].inlineStyles).toHaveLength(2);
-  // Add detailed expectations for the start/end positions.
 });
 
 it('merges inline styles for nested <strong> and <span style="color:#0000ff"> elements', () => {
   const html = '<p><strong>Bold <span style="color:#0000ff;">Blue</span> Bold</strong></p>';
   const blocks = parseHtmlToBlocks(html);
 
-  // We expect one DocumentBlock containing the full text "Bold Blue Bold"
   expect(blocks).toHaveLength(1);
   expect(blocks[0].text).toBe('Bold Blue Bold');
-
-  // We expect two inlineStyles:
-  // 1. The outer <strong> should mark the entire text as bold.
-  // 2. The inner <span> should mark only "Blue" with the specified color.
   expect(blocks[0].inlineStyles).toHaveLength(2);
 
-  // For the outer <strong>:
-  // "Bold Blue Bold" has a length of 14.
-  // The bold style should cover from index 0 to 14.
   expect(blocks[0].inlineStyles).toContainEqual({
     start: 0,
     end: 14,
     textStyle: { bold: true }
   });
 
-  // For the inner <span>:
-  // "Bold " is 5 characters, so "Blue" starts at index 5.
-  // "Blue" has 4 characters, so the range should be from index 5 to 9.
   expect(blocks[0].inlineStyles).toContainEqual({
     start: 5,
     end: 9,
-    textStyle: { color: '#0000ff' }
+    textStyle: {
+      foregroundColor: {
+        color: {
+          rgbColor: {
+            red: 0,
+            green: 0,
+            blue: 1
+          }
+        }
+      }
+    }
   });
 });
 
@@ -194,7 +193,7 @@ describe('br tag handling', () => {
     expect(blocks[0].inlineStyles).toHaveLength(1);
     expect(blocks[0].inlineStyles![0]).toEqual({
       start: 0,
-      end: 9, // 'Bold\nText'.length
+      end: 9,
       textStyle: { bold: true }
     });
   });
@@ -221,8 +220,18 @@ describe('br tag handling', () => {
     expect(blocks[0].inlineStyles).toHaveLength(1);
     expect(blocks[0].inlineStyles![0]).toEqual({
       start: 0,
-      end: 8, // 'Red\nText'.length
-      textStyle: { color: '#ff0000' }
+      end: 8,
+      textStyle: {
+        foregroundColor: {
+          color: {
+            rgbColor: {
+              red: 1,
+              green: 0,
+              blue: 0
+            }
+          }
+        }
+      }
     });
   });
 });

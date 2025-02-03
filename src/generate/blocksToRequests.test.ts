@@ -36,6 +36,44 @@ describe('blocksToRequests', () => {
     expect(updateTextStyleReq.updateTextStyle.textStyle).toEqual({ bold: true });
   });
 
+  it('correctly formats foregroundColor in text style requests', () => {
+    const blocks: DocumentBlock[] = [{
+      text: 'Colored text',
+      paragraphStyle: { namedStyleType: 'NORMAL_TEXT' },
+      inlineStyles: [{
+        start: 0,
+        end: 12,
+        textStyle: {
+          foregroundColor: {
+            color: {
+              rgbColor: {
+                red: 1,
+                green: 0,
+                blue: 0
+              }
+            }
+          }
+        }
+      }],
+    }];
+    const requests = blocksToRequests(blocks);
+    expect(requests.length).toBe(3);
+    const updateTextStyleReq = requests.find(req => req.updateTextStyle) as { updateTextStyle: { range: { startIndex: number; endIndex: number }, textStyle: any, fields: string } };
+    expect(updateTextStyleReq).toBeDefined();
+    expect(updateTextStyleReq.updateTextStyle.range).toEqual({ startIndex: 1, endIndex: 13 });
+    expect(updateTextStyleReq.updateTextStyle.textStyle).toEqual({
+      foregroundColor: {
+        color: {
+          rgbColor: {
+            red: 1,
+            green: 0,
+            blue: 0
+          }
+        }
+      }
+    });
+  });
+
   it('advances currentIndex correctly for multiple blocks', () => {
     const blocks: DocumentBlock[] = [
       { text: 'Block A', paragraphStyle: { namedStyleType: 'NORMAL_TEXT' } },
@@ -63,6 +101,52 @@ describe('blocksToRequests', () => {
     // "List item" has 9 characters so the range is from 1 to 10.
     expect(bulletReq.createParagraphBullets.range).toEqual({ startIndex: 1, endIndex: 10 });
     expect(bulletReq.createParagraphBullets.bulletPreset).toBe('BULLET_DISC_CIRCLE_SQUARE');
+  });
+
+  it('generates table requests for table cells', () => {
+    const blocks: DocumentBlock[] = [
+      {
+        text: 'Cell 1',
+        paragraphStyle: { namedStyleType: 'NORMAL_TEXT' },
+        tableInfo: { rowIndex: 0, columnIndex: 0, rowSpan: 1, columnSpan: 1 }
+      },
+      {
+        text: 'Cell 2',
+        paragraphStyle: { namedStyleType: 'NORMAL_TEXT' },
+        tableInfo: { rowIndex: 0, columnIndex: 1, rowSpan: 1, columnSpan: 2 }
+      }
+    ];
+    
+    const requests = blocksToRequests(blocks);
+    
+    // For each cell we expect:
+    // 1. insertText
+    // 2. updateParagraphStyle
+    // Plus table structure request:
+    // 3. insertTable (once at start, with correct number of columns)
+    expect(requests.length).toBe(5); // 2 cells * 2 basic requests + table
+
+    // Verify table creation
+    const insertTableReq = requests.find(req => req.insertTable);
+    expect(insertTableReq).toBeDefined();
+    expect(insertTableReq).toEqual({
+      insertTable: {
+        location: { index: 1 },
+        rows: 1,
+        columns: 3 // Account for columnSpan: 2 in second cell
+      }
+    });
+
+    // Verify text and style requests for both cells
+    const insertTextReqs = requests.filter(req => req.insertText);
+    expect(insertTextReqs).toHaveLength(2);
+    expect(insertTextReqs[0].insertText.text).toBe('Cell 1\n');
+    expect(insertTextReqs[1].insertText.text).toBe('Cell 2\n');
+
+    const updateStyleReqs = requests.filter(req => req.updateParagraphStyle);
+    expect(updateStyleReqs).toHaveLength(2);
+    expect(updateStyleReqs[0].updateParagraphStyle.paragraphStyle).toEqual({ namedStyleType: 'NORMAL_TEXT' });
+    expect(updateStyleReqs[1].updateParagraphStyle.paragraphStyle).toEqual({ namedStyleType: 'NORMAL_TEXT' });
   });
 });
 

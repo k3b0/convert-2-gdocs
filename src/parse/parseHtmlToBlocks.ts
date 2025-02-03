@@ -11,7 +11,7 @@ export interface DocumentBlock {
     textStyle: {
       bold?: boolean;
       italic?: boolean;
-      color?: string;
+      foregroundColor?: { color: { rgbColor: { red?: number; green?: number; blue?: number } } };
       underline?: boolean;
       link?: { url: string };
     };
@@ -270,7 +270,7 @@ export function parseHtmlToBlocks(html: string): DocumentBlock[] {
   function getInlineStyle($element: Cheerio<Element>): {
     bold?: boolean;
     italic?: boolean;
-    color?: string;
+    foregroundColor?: { color: { rgbColor: { red?: number; green?: number; blue?: number } } };
     underline?: boolean;
     link?: { url: string };
   } | null {
@@ -279,7 +279,7 @@ export function parseHtmlToBlocks(html: string): DocumentBlock[] {
     const style: {
       bold?: boolean;
       italic?: boolean;
-      color?: string;
+      foregroundColor?: { color: { rgbColor: { red?: number; green?: number; blue?: number } } };
       underline?: boolean;
       link?: { url: string };
     } = {};
@@ -307,9 +307,18 @@ export function parseHtmlToBlocks(html: string): DocumentBlock[] {
     if (tag === 'span') {
       const styleAttr = $element.attr('style');
       if (styleAttr) {
-        const colorMatch = styleAttr.match(/color:\s*(#[0-9a-f]{6})/i);
+        const colorMatch = styleAttr.match(/color:\s*#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})/i);
         if (colorMatch) {
-          style.color = colorMatch[1];
+          const [, r, g, b] = colorMatch;
+          style.foregroundColor = {
+            color: {
+              rgbColor: {
+                red: parseInt(r, 16) / 255,
+                green: parseInt(g, 16) / 255,
+                blue: parseInt(b, 16) / 255
+              }
+            }
+          };
           hasStyle = true;
         }
       }
