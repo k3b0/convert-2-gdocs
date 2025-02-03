@@ -56,10 +56,10 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/google-docs-converter.git"
+    "url": "https://github.com/k3b0/convert-2-gdocs.git"
   },
   "bugs": {
-    "url": "https://github.com/yourusername/google-docs-converter/issues"
+    "url": "https://github.com/k3b0/convert-2-gdocs/issues"
   },
-  "homepage": "https://github.com/yourusername/google-docs-converter#readme"
+  "homepage": "https://github.com/k3b0/convert-2-gdocs#readme"
 }
