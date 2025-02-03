@@ -1,9 +1,12 @@
 {
   "name": "google-docs-converter",
-  "version": "1.0.0",
+  "version": "0.3.0",
   "description": "Converts HTML/Markdown to Google Docs API requests",
   "type": "module",
   "scripts": {
+    "build": "vite build",
+    "dev": "vite build --watch",
+    "typecheck": "tsc --noEmit",
     "test": "vitest run --reporter verbose",
     "test:watch": "vitest --watch",
     "test:coverage": "vitest --coverage"

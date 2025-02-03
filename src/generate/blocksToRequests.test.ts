@@ -10,15 +10,16 @@ describe('blocksToRequests', () => {
     }];
     const requests = blocksToRequests(blocks);
     expect(requests.length).toBe(2);
-    const insertText = requests.find(req => req.type === 'insertText') as { type: 'insertText'; text: string; location: { index: number } };
-    const updateParagraphStyle = requests.find(req => req.type === 'updateParagraphStyle') as { type: 'updateParagraphStyle'; range: { start: number; end: number }; paragraphStyle: { namedStyleType: string } };
-    expect(insertText).toBeDefined();
-    expect(updateParagraphStyle).toBeDefined();
-    expect(insertText.text).toBe('Hello\n');
-    expect(insertText.location.index).toBe(1);
-    expect(updateParagraphStyle.range.start).toBe(1);
-    expect(updateParagraphStyle.range.end).toBe(7);
-    expect(updateParagraphStyle.paragraphStyle).toEqual({ namedStyleType: 'NORMAL_TEXT' });
+
+    const insertTextReq = requests.find(req => req.insertText) as { insertText: { text: string; location: { index: number } } };
+    const updateParagraphStyleReq = requests.find(req => req.updateParagraphStyle) as { updateParagraphStyle: { range: { startIndex: number; endIndex: number }, paragraphStyle: { namedStyleType: string }, fields: string } };
+
+    expect(insertTextReq).toBeDefined();
+    expect(updateParagraphStyleReq).toBeDefined();
+    expect(insertTextReq.insertText.text).toBe('Hello\n');
+    expect(insertTextReq.insertText.location.index).toBe(1);
+    expect(updateParagraphStyleReq.updateParagraphStyle.range).toEqual({ startIndex: 1, endIndex: 7 });
+    expect(updateParagraphStyleReq.updateParagraphStyle.paragraphStyle).toEqual({ namedStyleType: 'NORMAL_TEXT' });
   });
 
   it('adds updateTextStyle requests for inline style ranges', () => {
@@ -29,11 +30,10 @@ describe('blocksToRequests', () => {
     }];
     const requests = blocksToRequests(blocks);
     expect(requests.length).toBe(3);
-    const updateTextStyle = requests.find(req => req.type === 'updateTextStyle') as { type: 'updateTextStyle'; range: { start: number; end: number }; textStyle: any };
-    expect(updateTextStyle).toBeDefined();
-    expect(updateTextStyle.range.start).toBe(7);
-    expect(updateTextStyle.range.end).toBe(12);
-    expect(updateTextStyle.textStyle).toEqual({ bold: true });
+    const updateTextStyleReq = requests.find(req => req.updateTextStyle) as { updateTextStyle: { range: { startIndex: number; endIndex: number }, textStyle: any, fields: string } };
+    expect(updateTextStyleReq).toBeDefined();
+    expect(updateTextStyleReq.updateTextStyle.range).toEqual({ startIndex: 7, endIndex: 12 });
+    expect(updateTextStyleReq.updateTextStyle.textStyle).toEqual({ bold: true });
   });
 
   it('advances currentIndex correctly for multiple blocks', () => {
@@ -42,10 +42,11 @@ describe('blocksToRequests', () => {
       { text: 'Block B', paragraphStyle: { namedStyleType: 'NORMAL_TEXT' } },
     ];
     const requests = blocksToRequests(blocks);
-    const insertTexts = requests.filter(req => req.type === 'insertText') as { type: 'insertText'; location: { index: number } }[];
-    expect(insertTexts.length).toBe(2);
-    expect(insertTexts[0].location.index).toBe(1);
-    expect(insertTexts[1].location.index).toBe(9);
+    const insertTextReqs = requests.filter(req => req.insertText) as { insertText: { location: { index: number } } }[];
+    expect(insertTextReqs.length).toBe(2);
+    expect(insertTextReqs[0].insertText.location.index).toBe(1);
+    // "Block A" has length 7 + newline so its total length is 8, hence Block B starts at 1 + 8 = 9.
+    expect(insertTextReqs[1].insertText.location.index).toBe(9);
   });
 
   it('generates createParagraphBullets for list items', () => {
@@ -57,11 +58,11 @@ describe('blocksToRequests', () => {
     }];
     const requests = blocksToRequests(blocks);
     expect(requests.length).toBe(3);
-    const bulletRequest = requests.find(req => req.type === 'createParagraphBullets') as { type: 'createParagraphBullets'; range: { start: number; end: number }; listInfo: { ordered: boolean; nestingLevel: number } };
-    expect(bulletRequest).toBeDefined();
-    expect(bulletRequest.range.start).toBe(1);
-    expect(bulletRequest.range.end).toBe(10);
-    expect(bulletRequest.listInfo).toEqual({ ordered: false, nestingLevel: 0 });
+    const bulletReq = requests.find(req => req.createParagraphBullets) as { createParagraphBullets: { range: { startIndex: number; endIndex: number }, bulletPreset: string } };
+    expect(bulletReq).toBeDefined();
+    // "List item" has 9 characters so the range is from 1 to 10.
+    expect(bulletReq.createParagraphBullets.range).toEqual({ startIndex: 1, endIndex: 10 });
+    expect(bulletReq.createParagraphBullets.bulletPreset).toBe('BULLET_DISC_CIRCLE_SQUARE');
   });
 });
 
@@ -72,13 +73,13 @@ describe('blocksToRequests edge cases', () => {
       paragraphStyle: { namedStyleType: 'NORMAL_TEXT' },
     }];
     const requests = blocksToRequests(blocks);
-    // For an empty block, we still produce insertText and updateParagraphStyle.
+    // Still produce insertText and updateParagraphStyle.
     expect(requests.length).toBe(2);
-    const insertText = requests.find(req => req.type === 'insertText') as { type: 'insertText'; text: string; location: { index: number } };
-    const updateParagraphStyle = requests.find(req => req.type === 'updateParagraphStyle') as { type: 'updateParagraphStyle'; range: { start: number; end: number }; paragraphStyle: { namedStyleType: string } };
-    expect(insertText.text).toBe('\n');
-    expect(insertText.location.index).toBe(1);
-    expect(updateParagraphStyle.range).toEqual({ start: 1, end: 2 });
+    const insertTextReq = requests.find(req => req.insertText) as { insertText: { text: string; location: { index: number } } };
+    const updateParagraphStyleReq = requests.find(req => req.updateParagraphStyle) as { updateParagraphStyle: { range: { startIndex: number; endIndex: number }, paragraphStyle: { namedStyleType: string }, fields: string } };
+    expect(insertTextReq.insertText.text).toBe('\n');
+    expect(insertTextReq.insertText.location.index).toBe(1);
+    expect(updateParagraphStyleReq.updateParagraphStyle.range).toEqual({ startIndex: 1, endIndex: 2 });
   });
 
   it('clamps inline style range when style.end exceeds text length', () => {
@@ -90,10 +91,10 @@ describe('blocksToRequests edge cases', () => {
     const requests = blocksToRequests(blocks);
     // Expected: insertText + updateParagraphStyle + clamped updateTextStyle.
     expect(requests.length).toBe(3);
-    const updateTextStyle = requests.find(req => req.type === 'updateTextStyle') as { type: 'updateTextStyle'; range: { start: number; end: number }; textStyle: any };
-    // Block start is 1, text length is 5, so inline style range becomes start: 1+1=2, end: 1+5=6.
-    expect(updateTextStyle.range).toEqual({ start: 2, end: 6 });
-    expect(updateTextStyle.textStyle).toEqual({ italic: true });
+    const updateTextStyleReq = requests.find(req => req.updateTextStyle) as { updateTextStyle: { range: { startIndex: number; endIndex: number }, textStyle: any, fields: string } };
+    // For "Hello", text length is 5 so the inline style range becomes { startIndex: 1+1, endIndex: 1+5 } i.e. {2, 6}.
+    expect(updateTextStyleReq.updateTextStyle.range).toEqual({ startIndex: 2, endIndex: 6 });
+    expect(updateTextStyleReq.updateTextStyle.textStyle).toEqual({ italic: true });
   });
 
   it('generates both updateTextStyle and createParagraphBullets for a block with inline styles and list item properties', () => {
@@ -108,22 +109,20 @@ describe('blocksToRequests edge cases', () => {
     // Expected requests: insertText, updateParagraphStyle, updateTextStyle, and createParagraphBullets.
     expect(requests.length).toBe(4);
     
-    const insertText = requests.find(req => req.type === 'insertText') as { type: 'insertText'; text: string; location: { index: number } };
-    const updateParagraphStyle = requests.find(req => req.type === 'updateParagraphStyle') as { type: 'updateParagraphStyle'; range: { start: number; end: number }; paragraphStyle: { namedStyleType: string } };
-    const updateTextStyle = requests.find(req => req.type === 'updateTextStyle') as { type: 'updateTextStyle'; range: { start: number; end: number }; textStyle: any };
-    const createParagraphBullets = requests.find(req => req.type === 'createParagraphBullets') as { type: 'createParagraphBullets'; range: { start: number; end: number }; listInfo: { ordered: boolean; nestingLevel: number } };
-    
-    // Checking insertText and updateParagraphStyle based on "List styled" (length 12)
-    expect(insertText.text).toBe('List styled\n');
-    expect(insertText.location.index).toBe(1);
-    expect(updateParagraphStyle.range).toEqual({ start: 1, end: 13 });
-    
-    // updateTextStyle should have range: start = 1 + 0, end = 1 + min(4, 11) = 5.
-    expect(updateTextStyle.range).toEqual({ start: 1, end: 5 });
-    expect(updateTextStyle.textStyle).toEqual({ bold: true });
-    
-    // createParagraphBullets should have range: start = 1, end = 1 + text length (11)
-    expect(createParagraphBullets.range).toEqual({ start: 1, end: 12 });
-    expect(createParagraphBullets.listInfo).toEqual({ ordered: false, nestingLevel: 0 });
+    const insertTextReq = requests.find(req => req.insertText) as { insertText: { text: string; location: { index: number } } };
+    const updateParagraphStyleReq = requests.find(req => req.updateParagraphStyle) as { updateParagraphStyle: { range: { startIndex: number; endIndex: number }, paragraphStyle: { namedStyleType: string }, fields: string } };
+    const updateTextStyleReq = requests.find(req => req.updateTextStyle) as { updateTextStyle: { range: { startIndex: number; endIndex: number }, textStyle: any, fields: string } };
+    const createParagraphBulletsReq = requests.find(req => req.createParagraphBullets) as { createParagraphBullets: { range: { startIndex: number; endIndex: number }, bulletPreset: string } };
+
+    // For "List styled", text length is 11 and with newline it's 12.
+    expect(insertTextReq.insertText.text).toBe('List styled\n');
+    expect(insertTextReq.insertText.location.index).toBe(1);
+    expect(updateParagraphStyleReq.updateParagraphStyle.range).toEqual({ startIndex: 1, endIndex: 13 });
+    // Inline style should be clamped from 1+0 to 1+min(4,11)=5
+    expect(updateTextStyleReq.updateTextStyle.range).toEqual({ startIndex: 1, endIndex: 5 });
+    expect(updateTextStyleReq.updateTextStyle.textStyle).toEqual({ bold: true });
+    // For list item, range is from 1 to 1 + text length of 11 = 12.
+    expect(createParagraphBulletsReq.createParagraphBullets.range).toEqual({ startIndex: 1, endIndex: 12 });
+    expect(createParagraphBulletsReq.createParagraphBullets.bulletPreset).toBe('BULLET_DISC_CIRCLE_SQUARE');
   });
 });
