@@ -1,11 +1,19 @@
 # convert-2-gdocs
 
-A TypeScript library for converting HTML and Markdown content to Google Docs format using the Google Docs API.
+A TypeScript library for converting HTML and Markdown content to Google Docs format so they can be used with the Google Docs API.
 
 ## Installation
 
 ```bash
 npm install convert-2-gdocs
+```
+
+```bash
+yarn add convert-2-gdocs
+```
+
+```bash
+pnpm add convert-2-gdocs
 ```
 
 ## Usage
