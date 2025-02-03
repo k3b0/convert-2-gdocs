@@ -1,65 +1,18 @@
 {
-  "name": "convert-2-gdocs",
-  "version": "0.2.0",
-  "description": "Converts HTML and Markdown to Google Docs",
+  "name": "google-docs-converter",
+  "version": "1.0.0",
+  "description": "Converts HTML/Markdown to Google Docs API requests",
   "type": "module",
-  "main": "./dist/index.js",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "exports": {
-    ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
-    }
-  },
   "scripts": {
-    "build": "vite build",
-    "test": "vitest --run",
-    "test:coverage": "vitest run --coverage",
-    "lint": "eslint . --ext .ts",
-    "format": "prettier --write \"src/**/*.ts\"",
-    "prepare": "npm run build",
-    "clean": "rimraf dist"
-  },
-  "author": "Kieran Peppiatt",
-  "license": "MIT",
-  "dependencies": {
-    "cheerio": "^1.0.0-rc.12",
-    "convert-2-gdocs": "^0.1.0",
-    "googleapis": "^144.0.0",
-    "marked": "^15.0.6"
+    "test": "vitest",
+    "test:watch": "vitest --watch",
+    "test:coverage": "vitest --coverage"
   },
   "devDependencies": {
     "@types/node": "^22.13.0",
-    "@typescript-eslint/eslint-plugin": "^6.15.0",
-    "@typescript-eslint/parser": "^6.15.0",
-    "eslint": "^8.56.0",
-    "eslint-config-prettier": "^9.1.0",
-    "eslint-plugin-prettier": "^5.1.2",
-    "prettier": "^3.4.2",
-    "rimraf": "^5.0.5",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.7.3",
-    "vite": "^5.0.0",
-    "vite-plugin-dts": "^3.7.0",
-    "vitest": "^3.0.4"
-  },
-  "files": [
-    "dist/**/*"
-  ],
-  "keywords": [
-    "google-docs",
-    "markdown",
-    "html",
-    "converter",
-    "typescript"
-  ],
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/k3b0/convert-2-gdocs.git"
-  },
-  "bugs": {
-    "url": "https://github.com/k3b0/convert-2-gdocs/issues"
-  },
-  "homepage": "https://github.com/k3b0/convert-2-gdocs#readme"
+    "@vitest/coverage-v8": "^1.2.2",
+    "cheerio": "1.0.0-rc.12",
+    "vite-plugin-dts": "^4.5.0",
+    "vitest": "^1.2.2"
+  }
 }
