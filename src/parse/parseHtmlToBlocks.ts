@@ -98,21 +98,26 @@ export function parseHtmlToBlocks(html: string): DocumentBlock[] {
         case 'li': {
           const parent = $element.parent().get(0);
           const parentTag = parent && 'tagName' in parent ? parent.tagName.toLowerCase() : 'ul';
-          
-          // Create block from direct text content only
-          const textContent = $element.clone().children().remove().end().text().trim();
-          const block = createBlock($element, true, {
+        
+          // Clone <li> and remove nested lists only
+          const $clone = $element.clone();
+          $clone.children('ul, ol').remove();
+        
+          // Pass the trimmed clone to createBlock so it sees inline tags
+          const block = createBlock($clone, true, {
             ordered: parentTag === 'ol',
             nestingLevel: currentNestingLevel
-          }, textContent);
+          });
+        
           blocks.push(block);
-          
+        
           // Process nested lists separately
           $element.children('ul, ol').each((_: number, nestedList: Element) => {
             processNode($(nestedList), currentNestingLevel + 1);
           });
+        
           break;
-        }
+        }        
         case 'br': {
           // Handle <br> tags by appending a newline to the last block if it exists
           if (blocks.length > 0) {
