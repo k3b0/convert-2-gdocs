@@ -3,7 +3,11 @@ import dts from 'vite-plugin-dts';
 import { resolve } from 'path';
 
 export default defineConfig({
-  plugins: [dts()],
+  plugins: [
+    dts({
+      exclude: ['src/**/*.test.ts', 'src/test/**'],
+    }),
+  ],
   build: {
     lib: {
       entry: resolve(__dirname, 'src/index.ts'),
@@ -12,12 +16,12 @@ export default defineConfig({
       formats: ['es'],
     },
     rollupOptions: {
-      external: ['cheerio', 'marked'],
+      external: ['cheerio'],
       output: {
         exports: 'named'
       },
     },
-    sourcemap: true,
+    sourcemap: false,
     outDir: 'dist',
   },
 });

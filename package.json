@@ -1,8 +1,20 @@
 {
   "name": "convert-2-gdocs",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "Convert HTML content to Google Docs API requests",
   "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/k3b0/convert-2-gdocs.git"
@@ -24,18 +36,26 @@
   "homepage": "https://github.com/k3b0/convert-2-gdocs#readme",
   "scripts": {
     "build": "vite build",
+    "prepack": "vite build",
     "dev": "vite build --watch",
     "typecheck": "tsc --noEmit",
     "test": "vitest run --reporter verbose",
     "test:watch": "vitest --watch",
-    "test:coverage": "vitest --coverage"
+    "test:coverage": "vitest --coverage",
+    "pack:inspect": "npm pack --dry-run"
+  },
+  "dependencies": {
+    "cheerio": "1.0.0-rc.12"
+  },
+  "peerDependencies": {
+    "googleapis": "^144.0.0"
   },
   "devDependencies": {
     "@types/node": "^22.13.0",
     "@vitest/coverage-v8": "^1.2.2",
-    "cheerio": "1.0.0-rc.12",
+    "googleapis": "^144.0.0",
+    "vite": "^5.4.0",
     "vite-plugin-dts": "^4.5.0",
-    "vitest": "^1.2.2",
-    "googleapis": "^144.0.0"
+    "vitest": "^1.2.2"
   }
 }

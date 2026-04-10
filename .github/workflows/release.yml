@@ -1,0 +1,58 @@
+# Publishes to npm when a commit lands on main and package.json "version" changed.
+# Merges that do not bump the version skip publish (same as a no-op for npm).
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  version-check:
+    runs-on: ubuntu-latest
+    outputs:
+      publish: ${{ steps.compare.outputs.publish }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - id: compare
+        run: |
+          CURRENT=$(jq -r .version package.json)
+          PREV=$(git show HEAD~1:package.json 2>/dev/null | jq -r .version 2>/dev/null || echo "")
+          if [ -z "$PREV" ]; then
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+            echo "No previous package.json version to compare; skipping publish."
+            exit 0
+          fi
+          if [ "$CURRENT" = "$PREV" ]; then
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+            echo "Version unchanged ($CURRENT); skipping publish."
+          else
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+            echo "Version bumped: $PREV -> $CURRENT — publishing."
+          fi
+
+  publish:
+    needs: version-check
+    if: needs.version-check.outputs.publish == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org'
+
+      - run: npm install
+
+      - run: npm run typecheck
+
+      - run: npm test
+
+      - run: npm publish --access public
